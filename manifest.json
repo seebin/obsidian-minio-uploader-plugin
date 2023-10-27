@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "minio-uploader",
+	"name": "Minio Uploader",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Upload images, videos, audio, pdf, and other files to Minio OSS.",
+	"author": "Seebin",
+	"authorUrl": "https://www.seebin.com",
 	"isDesktopOnly": false
 }

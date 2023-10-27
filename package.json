@@ -12,6 +12,8 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/mime": "^3.0.3",
+		"@types/minio": "7.1.1",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -20,5 +22,10 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"mime": "^3.0.0",
+		"minio": "7.1.3",
+		"minio-es": "^0.0.2"
 	}
 }
