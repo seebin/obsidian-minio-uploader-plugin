@@ -1,8 +1,8 @@
 import { App, Editor, EditorPosition, Notice, Plugin, PluginSettingTab, Setting, TextComponent, setIcon } from 'obsidian';
-import { Client } from 'minio-es'
+import { Client } from 'minio-es';
 import { moment } from 'obsidian';
-import mime from 'mime'
-import { t } from 'i18n';
+import mime from 'mime';
+import { t } from './i18n';
 
 interface MinioPluginSettings {
 	accessKey: string;
@@ -52,8 +52,8 @@ export default class MinioUploaderPlugin extends Plugin {
 		// });
 		// This adds an editor command that can perform some operation on the current editor instance
 		this.addCommand({
-			id: 'minio-upload-command',
-			name: t('Minio upload command'),
+			id: 'minio-uploader',
+			name: t('File upload'),
 			icon: 'upload-cloud',
 			editorCallback: (editor: Editor) => {
 				const input = document.createElement('input')
@@ -65,11 +65,11 @@ export default class MinioUploaderPlugin extends Plugin {
 					const { endpoint, port, useSSL, bucket } = this.settings
 					const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
 					const pathName = `${file.name}`
-					let replaceText = `[${t('uploading')}：0%](${pathName})\n`;
+					let replaceText = `[${t('Uploading')}：0%](${pathName})\n`;
 					editor.replaceSelection(replaceText);
 
 					await this.minioUploader(file, pathName, (process) => {
-						const replaceText2 = `[${t('uploading')}：${process}%](${pathName})`;
+						const replaceText2 = `[${t('Uploading')}：${process}%](${pathName})`;
 						this.replaceText(editor, replaceText, replaceText2)
 						replaceText = replaceText2
 					})
@@ -131,11 +131,11 @@ export default class MinioUploaderPlugin extends Plugin {
 		const { endpoint, port, useSSL, bucket } = this.settings
 		const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
 		const pathName = `${file.name}`
-		let replaceText = `[${t('uploading')}：0%](${pathName})\n`;
+		let replaceText = `[${t('Uploading')}：0%](${pathName})\n`;
 		editor.replaceSelection(replaceText);
 
 		await this.minioUploader(file, pathName, (process) => {
-			const replaceText2 = `[${t('uploading')}：${process}%](${pathName})`;
+			const replaceText2 = `[${t('Uploading')}：${process}%](${pathName})`;
 			this.replaceText(editor, replaceText, replaceText2)
 			replaceText = replaceText2
 		})
@@ -314,21 +314,13 @@ class MinioSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		containerEl.createEl("h1", { text: "Minio Uploader Plugin" });
-		containerEl.createEl("div", { text: t("Auther: ") }).createEl('a', {
-			text: 'Seebin 👩🏽‍💻',
-			href: 'https://github.com/seebin'
-		});
-		containerEl.createEl("h3", { text: t("Settings for Minio") });
-
-		containerEl.createEl("br");
 
 		new Setting(containerEl)
-			.setName('Access Key')
-			.setDesc(t('required'))
+			.setName('Access key')
+			.setDesc(t('Required'))
 			.addText(text => {
 				wrapTextWithPasswordHide(text);
-				text.setPlaceholder(t('Enter your Access Key'))
+				text.setPlaceholder(t('Enter your access key'))
 					.setValue(this.plugin.settings.accessKey)
 					.onChange(async (value) => {
 						this.plugin.settings.accessKey = value;
@@ -336,11 +328,11 @@ class MinioSettingTab extends PluginSettingTab {
 					})
 			});
 		new Setting(containerEl)
-			.setName('Secret Key')
-			.setDesc(t('required'))
+			.setName('Secret key')
+			.setDesc(t('Required'))
 			.addText(text => {
 				wrapTextWithPasswordHide(text);
-				text.setPlaceholder(t('Enter your Secret Key'))
+				text.setPlaceholder(t('Enter your secret key'))
 					.setValue(this.plugin.settings.secretKey)
 					.onChange(async (value) => {
 						this.plugin.settings.secretKey = value;
@@ -349,9 +341,9 @@ class MinioSettingTab extends PluginSettingTab {
 			});
 		new Setting(containerEl)
 			.setName('Region')
-			.setDesc(t('optional'))
+			.setDesc(t('Optional'))
 			.addText(text => text
-				.setPlaceholder(t('Enter your Region'))
+				.setPlaceholder(t('Enter your region'))
 				.setValue(this.plugin.settings.region)
 				.onChange(async (value) => {
 					this.plugin.settings.region = value;
@@ -359,7 +351,7 @@ class MinioSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName('Bucket')
-			.setDesc(t('required'))
+			.setDesc(t('Required'))
 			.addText(text => text
 				.setPlaceholder(t('Enter your bucket'))
 				.setValue(this.plugin.settings.bucket)
@@ -369,7 +361,7 @@ class MinioSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName('Endpoint')
-			.setDesc(t('required'))
+			.setDesc(t('Required'))
 			.addText(text => text
 				.setPlaceholder('minio.xxxx.cn')
 				.setValue(this.plugin.settings.endpoint)
@@ -379,9 +371,9 @@ class MinioSettingTab extends PluginSettingTab {
 				}));
 		new Setting(containerEl)
 			.setName('Port')
-			.setDesc(t('required'))
+			.setDesc(t('Required'))
 			.addText(text => text
-				.setPlaceholder(t('Enter your Port'))
+				.setPlaceholder(t('Enter your port'))
 				.setValue(this.plugin.settings.port + '')
 				.onChange(async (value) => {
 					this.plugin.settings.port = parseInt(value);
@@ -395,38 +387,38 @@ class MinioSettingTab extends PluginSettingTab {
 					this.plugin.settings.useSSL = value;
 					await this.plugin.saveSettings();
 				}));
-		containerEl.createEl("h3", { text: t("Settings for Object") });
+		containerEl.createEl("h3", { text: t("Object rules") });
 		containerEl.createEl("br");
 		new Setting(containerEl)
-			.setName(t('Object Naming Rules'))
-			.setDesc(t('Naming Rules Description'))
+			.setName(t('Object naming rules'))
+			.setDesc(t('Naming rules description'))
 			.addDropdown((select) => select
-				.addOption('local', t('Local File Name'))
-				.addOption('time', t('Time Stamp Name'))
+				.addOption('local', t('Local file name'))
+				.addOption('time', t('Time stamp name'))
 				.setValue(this.plugin.settings.nameRule)
 				.onChange(async value => {
 					this.plugin.settings.nameRule = value;
 					await this.plugin.saveSettings();
 				}))
 		new Setting(containerEl)
-			.setName(t('Object Path Rules'))
-			.setDesc(t('Object Path Rules Description'))
+			.setName(t('Object path rules'))
+			.setDesc(t('Object path rules description'))
 			.addDropdown((select) => select
-				.addOption('root', t('Root Directory'))
-				.addOption('type', t('File Type Directory'))
-				.addOption('date', t('Date Directory'))
-				.addOption('typeAndData', t('File Type And Date Directory'))
+				.addOption('root', t('Root directory'))
+				.addOption('type', t('File type directory'))
+				.addOption('date', t('Date directory'))
+				.addOption('typeAndData', t('File type and date directory'))
 				.setValue(this.plugin.settings.pathRule)
 				.onChange(async value => {
 					this.plugin.settings.pathRule = value;
 					await this.plugin.saveSettings();
 				}))
 
-		containerEl.createEl("h3", { text: t("Settings for Preview") });
+		containerEl.createEl("h3", { text: t("Preview") });
 		containerEl.createEl("br");
 		new Setting(containerEl)
-			.setName(t('Image Preview'))
-			.setDesc(t('Image Preview Description'))
+			.setName(t('Image preview'))
+			.setDesc(t('Image preview description'))
 			.addToggle(text => text
 				.setValue(this.plugin.settings.imgPreview)
 				.onChange(async (value) => {
@@ -434,8 +426,8 @@ class MinioSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName(t('Video Preview'))
-			.setDesc(t('Video Preview Description'))
+			.setName(t('Video preview'))
+			.setDesc(t('Video preview description'))
 			.addToggle(text => text
 				.setValue(this.plugin.settings.videoPreview)
 				.onChange(async (value) => {
@@ -443,8 +435,8 @@ class MinioSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName(t('Audio Preview'))
-			.setDesc(t('Audio Preview Description'))
+			.setName(t('Audio preview'))
+			.setDesc(t('Audio preview description'))
 			.addToggle(text => text
 				.setValue(this.plugin.settings.audioPreview)
 				.onChange(async (value) => {
@@ -452,12 +444,12 @@ class MinioSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
-			.setName(t('Docs Preview'))
-			.setDesc(t('Docs Preview Description'))
+			.setName(t('Docs preview'))
+			.setDesc(t('Docs preview description'))
 			.addDropdown((select) => select
-				.addOption('', t('disabled'))
-				.addOption('https://docs.google.com/viewer?url=', t('Google Docs'))
-				.addOption('https://view.officeapps.live.com/op/view.aspx?src=', t('Office Online'))
+				.addOption('', t('Disabled'))
+				.addOption('https://docs.google.com/viewer?url=', t('Google docs'))
+				.addOption('https://view.officeapps.live.com/op/view.aspx?src=', t('Office online'))
 				.setValue(this.plugin.settings.docsPreview)
 				.onChange(async value => {
 					this.plugin.settings.docsPreview = value;
