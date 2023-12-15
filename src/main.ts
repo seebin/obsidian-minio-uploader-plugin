@@ -64,16 +64,15 @@ export default class MinioUploaderPlugin extends Plugin {
 
 					const { endpoint, port, useSSL, bucket } = this.settings
 					const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
-					const pathName = `${file.name}`
-					let replaceText = `[${t('Uploading')}：0%](${pathName})\n`;
+					let replaceText = `[${t('Uploading')}：0%](${file.name})\n`;
 					editor.replaceSelection(replaceText);
 
-					await this.minioUploader(file, pathName, (process) => {
-						const replaceText2 = `[${t('Uploading')}：${process}%](${pathName})`;
+					const objectName = await this.minioUploader(file, (process) => {
+						const replaceText2 = `[${t('Uploading')}：${process}%](${file.name})`;
 						this.replaceText(editor, replaceText, replaceText2)
 						replaceText = replaceText2
 					})
-					const url = `${host}/${bucket}/${pathName}`
+					const url = `${host}/${bucket}/${objectName}`
 					this.replaceText(editor, replaceText, this.wrapFileDependingOnType(this.getFileType(file), url, file.name))
 				}
 				input.click()
@@ -114,7 +113,7 @@ export default class MinioUploaderPlugin extends Plugin {
 		if (evt.defaultPrevented) {
 			return;
 		}
-		let file = null;
+		let file: any = null;
 
 		// figure out what kind of event we're handling
 		switch (evt.type) {
@@ -130,20 +129,51 @@ export default class MinioUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		const { endpoint, port, useSSL, bucket } = this.settings
 		const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
-		let pathName = `${file.name}`
-		let replaceText = `[${t('Uploading')}：0%](${pathName})\n`;
+		let replaceText = `[${t('Uploading')}：0%](${file.name})\n`;
 		editor.replaceSelection(replaceText);
 
-		pathName = await this.minioUploader(file, pathName, (process) => {
-			const replaceText2 = `[${t('Uploading')}：${process}%](${pathName})`;
+		const objectName = await this.minioUploader(file, (process) => {
+			const replaceText2 = `[${t('Uploading')}：${process}%](${file.name})`;
 			this.replaceText(editor, replaceText, replaceText2)
 			replaceText = replaceText2
 		})
-		const url = `${host}/${bucket}/${pathName}`
+		const url = `${host}/${bucket}/${objectName}`
 		this.replaceText(editor, replaceText, this.wrapFileDependingOnType(this.getFileType(file), url, file.name))
 	}
 
-	minioUploader(file: File, fileName: string, progress?: (count: number) => void): Promise<string> {
+	genObjectName (file: File) {
+		let objectName = ''
+		switch (this.settings.pathRule) {
+			case 'root':
+				objectName = ''
+				break;
+			case 'type':
+				objectName = `${this.getFileType(file)}/`
+				break;
+			case 'date':
+				objectName = `${moment().format('YYYY/MM/DD')}/`
+				break;
+			case 'typeAndData':
+				objectName = `${this.getFileType(file)}/${moment().format('YYYY/MM/DD')}/`
+				break;
+			default:
+		}
+		switch (this.settings.nameRule) {
+			case 'local':
+				objectName += file.name
+				break;
+			case 'time':
+				objectName += moment().format('YYYYMMDDHHmmSS') + file.name.substring(file.name.lastIndexOf('.'))
+				break;
+			case 'timeAndLocal':
+				objectName += moment().format('YYYYMMDDHHmmSS') + '_' + file.name
+				break;
+			default:
+		}
+		return objectName
+	}
+
+	minioUploader(file: File, progress?: (count: number) => void): Promise<string> {
 		return new Promise((resolve, reject) => {
 			try {
 				const minioClient = new Client({
@@ -154,32 +184,8 @@ export default class MinioUploaderPlugin extends Plugin {
 					accessKey: this.settings.accessKey,
 					secretKey: this.settings.secretKey
 				})
-				let objectName = ''
-				switch (this.settings.pathRule) {
-					case 'root':
-						objectName = ''
-						break;
-					case 'type':
-						objectName = `${this.getFileType(file)}/`
-						break;
-					case 'date':
-						objectName = `${moment().format('YYYY/MM/DD')}/`
-						break;
-					case 'typeAndData':
-						objectName = `${this.getFileType(file)}/${moment().format('YYYY/MM/DD')}/`
-						break;
-					default:
-				}
-				switch (this.settings.nameRule) {
-					case 'local':
-						objectName += fileName
-						break;
-					case 'time':
-						objectName += `${new Date().getTime()}_${fileName}`
-						break;
-					default:
-				}
 
+				const objectName = this.genObjectName(file)
 				minioClient.presignedPutObject(this.settings.bucket, objectName, 1 * 60 * 60).then(presignedUrl => {
 					const xhr = new XMLHttpRequest();
 					xhr.upload.addEventListener("progress", (progressEvent) => {
@@ -394,7 +400,8 @@ class MinioSettingTab extends PluginSettingTab {
 			.setDesc(t('Naming rules description'))
 			.addDropdown((select) => select
 				.addOption('local', t('Local file name'))
-				.addOption('time', t('Time stamp name'))
+				.addOption('time', t('Time file name'))
+				.addOption('timeAndLocal', t('Time and local file name'))
 				.setValue(this.plugin.settings.nameRule)
 				.onChange(async value => {
 					this.plugin.settings.nameRule = value;
