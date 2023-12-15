@@ -130,11 +130,11 @@ export default class MinioUploaderPlugin extends Plugin {
 		evt.preventDefault();
 		const { endpoint, port, useSSL, bucket } = this.settings
 		const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
-		const pathName = `${file.name}`
+		let pathName = `${file.name}`
 		let replaceText = `[${t('Uploading')}：0%](${pathName})\n`;
 		editor.replaceSelection(replaceText);
 
-		await this.minioUploader(file, pathName, (process) => {
+		pathName = await this.minioUploader(file, pathName, (process) => {
 			const replaceText2 = `[${t('Uploading')}：${process}%](${pathName})`;
 			this.replaceText(editor, replaceText, replaceText2)
 			replaceText = replaceText2
@@ -143,7 +143,7 @@ export default class MinioUploaderPlugin extends Plugin {
 		this.replaceText(editor, replaceText, this.wrapFileDependingOnType(this.getFileType(file), url, file.name))
 	}
 
-	minioUploader(file: File, fileName: string, progress?: (count: number) => void) {
+	minioUploader(file: File, fileName: string, progress?: (count: number) => void): Promise<string> {
 		return new Promise((resolve, reject) => {
 			try {
 				const minioClient = new Client({
@@ -175,7 +175,7 @@ export default class MinioUploaderPlugin extends Plugin {
 						objectName += fileName
 						break;
 					case 'time':
-						objectName += new Date().getTime() + fileName.substring(fileName.lastIndexOf('.'))
+						objectName += `${new Date().getTime()}_${fileName}`
 						break;
 					default:
 				}
@@ -188,7 +188,7 @@ export default class MinioUploaderPlugin extends Plugin {
 					xhr.onreadystatechange = function () {
 						if (xhr.readyState === 4) {
 							if (xhr.status === 200) {
-								resolve(xhr)
+								resolve(objectName)
 							} else {
 								console.error('xhr', xhr)
 								reject(xhr.status)
