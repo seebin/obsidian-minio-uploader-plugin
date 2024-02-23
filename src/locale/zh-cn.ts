@@ -8,6 +8,7 @@ export default {
 	'Enter your secret key': '请输入 Secret Key',
 	'Enter your region': '输入存储地区',
 	'Enter your bucket': '输入存储桶',
+	'Enter your custom path': '输入自定义路径，支持变量{year} {month} {day}',
 	'Enter your port': '端口号',
 
 	'Object rules': '对象规则',

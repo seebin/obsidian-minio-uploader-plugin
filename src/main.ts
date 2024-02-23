@@ -10,6 +10,7 @@ interface MinioPluginSettings {
 	region: string;
 	bucket: string;
 	endpoint: string;
+	path: string;
 	port: number;
 	useSSL: boolean;
 	imgPreview: boolean;
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS: MinioPluginSettings = {
 	secretKey: '',
 	region: '',
 	endpoint: '',
+	path: '',
 	port: 443,
 	bucket: '',
 	useSSL: true,
@@ -62,7 +64,13 @@ export default class MinioUploaderPlugin extends Plugin {
 				input.onchange = async (event: Event) => {
 					const file = (event.target as any)?.files[0]
 
-					const { endpoint, port, useSSL, bucket } = this.settings
+					const { endpoint, port, useSSL, bucket, path } = this.settings
+
+					//新增年、月、日路径变量支持，自定义路径更灵活
+					const today = new Date()
+					const year = today.getFullYear() + '', month = ((today.getMonth() + 1) + '').padStart(2, '0'), day = (today.getDate() + '').padStart(2, '0')
+					const newPath = path.replace(/\{year\}/g, year).replace(/\{month\}/g, month).replace(/\{day\}/g, day)
+
 					const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
 					let replaceText = `[${t('Uploading')}：0%](${file.name})\n`;
 					editor.replaceSelection(replaceText);
@@ -72,7 +80,7 @@ export default class MinioUploaderPlugin extends Plugin {
 						this.replaceText(editor, replaceText, replaceText2)
 						replaceText = replaceText2
 					})
-					const url = `${host}/${bucket}/${objectName}`
+					const url = `${host}/${bucket}/${newPath}/${objectName}`.replace(/ /g, '%20') //将路径中的空格替换成%20，解决文件名存在空格时无法预览问题
 					this.replaceText(editor, replaceText, this.wrapFileDependingOnType(this.getFileType(file), url, file.name))
 				}
 				input.click()
@@ -127,7 +135,13 @@ export default class MinioUploaderPlugin extends Plugin {
 		if (!file || file && !this.getFileType(file)) return;
 
 		evt.preventDefault();
-		const { endpoint, port, useSSL, bucket } = this.settings
+		const { endpoint, port, useSSL, bucket, path } = this.settings
+
+		//替换变量生成新路径
+		const today = new Date()
+		const year = today.getFullYear() + '', month = ((today.getMonth() + 1) + '').padStart(2, '0'), day = (today.getDate() + '').padStart(2, '0')
+		const newPath = path.replace(/\{year\}/g, year).replace(/\{month\}/g, month).replace(/\{day\}/g, day)
+
 		const host = `http${useSSL ? 's' : ''}://${endpoint}${port === 443 || port === 80 ? '' : ':' + port}`
 		let replaceText = `[${t('Uploading')}：0%](${file.name})\n`;
 		editor.replaceSelection(replaceText);
@@ -137,7 +151,7 @@ export default class MinioUploaderPlugin extends Plugin {
 			this.replaceText(editor, replaceText, replaceText2)
 			replaceText = replaceText2
 		})
-		const url = `${host}/${bucket}/${objectName}`
+		const url = `${host}/${bucket}/${newPath}/${objectName}`.replace(/ /g, '%20') //将路径中的空格替换成%20，解决文件名存在空格时无法预览问题
 		this.replaceText(editor, replaceText, this.wrapFileDependingOnType(this.getFileType(file), url, file.name))
 	}
 
@@ -186,7 +200,7 @@ export default class MinioUploaderPlugin extends Plugin {
 				})
 
 				const objectName = this.genObjectName(file)
-				minioClient.presignedPutObject(this.settings.bucket, objectName, 1 * 60 * 60).then(presignedUrl => {
+				minioClient.presignedPutObject(this.settings.bucket, this.settings.path + '/' + objectName, 1 * 60 * 60).then(presignedUrl => {
 					const xhr = new XMLHttpRequest();
 					xhr.upload.addEventListener("progress", (progressEvent) => {
 						if (progress) progress(Math.round((progressEvent.loaded / progressEvent.total) * 100))
@@ -365,6 +379,16 @@ class MinioSettingTab extends PluginSettingTab {
 					this.plugin.settings.bucket = value;
 					await this.plugin.saveSettings();
 				}));
+		new Setting(containerEl)
+		.setName('Path')
+		.setDesc(t('Optional'))
+		.addText(text => text
+			.setPlaceholder(t('Enter your custom path'))
+			.setValue(this.plugin.settings.path)
+			.onChange(async (value) => {
+				this.plugin.settings.path = value;
+				await this.plugin.saveSettings();
+			}));
 		new Setting(containerEl)
 			.setName('Endpoint')
 			.setDesc(t('Required'))
