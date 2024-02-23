@@ -8,6 +8,7 @@ export default {
 	'Enter your secret key': 'Enter your secret key',
 	'Enter your region': 'Enter your region',
 	'Enter your bucket': 'Enter your bucket',
+	'Enter your custom path': 'Enter your custom path, support variable {year} {month} {day}',
 	'Enter your port': 'Enter your port',
 
 	'Object rules': 'Object rules',
