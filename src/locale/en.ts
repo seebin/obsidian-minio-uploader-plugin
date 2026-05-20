@@ -8,6 +8,7 @@ export default {
 	'Enter your secret key': 'Enter your secret key',
 	'Enter your region': 'Enter your region',
 	'Enter your bucket': 'Enter your bucket',
+	'Enter your folder': 'Enter your folder',
 	'Enter your port': 'Enter your port',
 
 	'Object rules': 'Object rules',
@@ -20,6 +21,8 @@ export default {
 	'Object path rules description': 'Please select the path rule for object name',
 	'Root directory': 'Root directory',
 	'File type directory': 'File type directory',
+	'Year directory': 'Year directory',
+	'Year month directory': 'Year/month directory',
 	'Date directory': 'Date directory',
 	'File type and date directory': 'File type and date directory',
 

@@ -8,6 +8,7 @@ export default {
 	'Enter your secret key': '请输入 Secret Key',
 	'Enter your region': '输入存储地区',
 	'Enter your bucket': '输入存储桶',
+	'Enter your folder': '输入目录前缀',
 	'Enter your port': '端口号',
 
 	'Object rules': '对象规则',
@@ -20,6 +21,8 @@ export default {
 	'Object path rules description': '请选择 ObjectName 的路径规则',
 	'Root directory': '根目录(不区分目录)',
 	'File type directory': '按文件类型划分目录',
+	'Year directory': '按年份划分目录',
+	'Year month directory': '按年月划分目录',
 	'Date directory': '按日期划分目录',
 	'File type and date directory': '按文件类型+日期划分目录',
 

@@ -5,6 +5,7 @@
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
+		"test": "tmpdir=$(mktemp -d) && tsc tests/object-name.test.ts --module commonjs --target ES2020 --moduleResolution node --outDir \"$tmpdir\" --skipLibCheck --esModuleInterop --types node && node \"$tmpdir/tests/object-name.test.js\"",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
