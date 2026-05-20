@@ -1,8 +1,8 @@
 import { App, Editor, EditorPosition, Notice, Plugin, PluginSettingTab, Setting, TextComponent, setIcon } from 'obsidian';
 import { Client } from 'minio-es';
+import { moment } from 'obsidian';
 import mime from 'mime';
 import { t } from './i18n';
-import { buildObjectName, getFileTypeFromMime } from './object-name';
 
 interface MinioPluginSettings {
 	accessKey: string;
@@ -93,7 +93,22 @@ export default class MinioUploaderPlugin extends Plugin {
 	}
 
 	getFileType(file: File) {
-		return getFileTypeFromMime(file);
+		const imageType = /image.*/;
+		const videoType = /video.*/;
+		const audioType = /audio.*/;
+		const docType = /application\/(vnd.*|pdf)/;
+
+		if (file?.type.match(videoType)) {
+			return "video";
+		} else if (file?.type.match(audioType)) {
+			return "audio";
+		} else if (file?.type.match(docType)) {
+			return "doc";
+		} else if (file?.type.match(imageType)) {
+			return "image";
+		} else {
+			return ''
+		}
 	}
 
 	async handleUploader(evt: ClipboardEvent | DragEvent, editor: Editor): Promise<void> {
@@ -129,12 +144,41 @@ export default class MinioUploaderPlugin extends Plugin {
 	}
 
 	genObjectName (file: File) {
-		return buildObjectName({
-			file,
-			folder: this.settings.folder,
-			pathRule: this.settings.pathRule,
-			nameRule: this.settings.nameRule,
-		})
+		const folder = this.settings.folder.replace(/^\/+|\/+$/g, '')
+		let objectName = folder ? `${folder}/` : ''
+		switch (this.settings.pathRule) {
+			case 'root':
+				break;
+			case 'type':
+				objectName += `${this.getFileType(file)}/`
+				break;
+			case 'year':
+				objectName += `${moment().format('YYYY')}/`
+				break;
+			case 'yearmonth':
+				objectName += `${moment().format('YYYY/MM')}/`
+				break;
+			case 'date':
+				objectName += `${moment().format('YYYY/MM/DD')}/`
+				break;
+			case 'typeAndData':
+				objectName += `${this.getFileType(file)}/${moment().format('YYYY/MM/DD')}/`
+				break;
+			default:
+		}
+		switch (this.settings.nameRule) {
+			case 'local':
+				objectName += file.name
+				break;
+			case 'time':
+				objectName += moment().format('YYYYMMDDHHmmSS') + file.name.substring(file.name.lastIndexOf('.'))
+				break;
+			case 'timeAndLocal':
+				objectName += moment().format('YYYYMMDDHHmmSS') + '_' + file.name
+				break;
+			default:
+		}
+		return objectName
 	}
 
 	minioUploader(file: File, progress?: (count: number) => void): Promise<string> {
