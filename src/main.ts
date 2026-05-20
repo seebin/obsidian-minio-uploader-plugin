@@ -9,6 +9,7 @@ interface MinioPluginSettings {
 	secretKey: string;
 	region: string;
 	bucket: string;
+	folder: string;
 	endpoint: string;
 	port: number;
 	useSSL: boolean;
@@ -27,6 +28,7 @@ const DEFAULT_SETTINGS: MinioPluginSettings = {
 	endpoint: '',
 	port: 443,
 	bucket: '',
+	folder: '',
 	useSSL: true,
 	imgPreview: true,
 	videoPreview: true,
@@ -142,19 +144,25 @@ export default class MinioUploaderPlugin extends Plugin {
 	}
 
 	genObjectName (file: File) {
-		let objectName = ''
+		const folder = this.settings.folder.replace(/^\/+|\/+$/g, '')
+		let objectName = folder ? `${folder}/` : ''
 		switch (this.settings.pathRule) {
 			case 'root':
-				objectName = ''
 				break;
 			case 'type':
-				objectName = `${this.getFileType(file)}/`
+				objectName += `${this.getFileType(file)}/`
+				break;
+			case 'year':
+				objectName += `${moment().format('YYYY')}/`
+				break;
+			case 'yearmonth':
+				objectName += `${moment().format('YYYY/MM')}/`
 				break;
 			case 'date':
-				objectName = `${moment().format('YYYY/MM/DD')}/`
+				objectName += `${moment().format('YYYY/MM/DD')}/`
 				break;
 			case 'typeAndData':
-				objectName = `${this.getFileType(file)}/${moment().format('YYYY/MM/DD')}/`
+				objectName += `${this.getFileType(file)}/${moment().format('YYYY/MM/DD')}/`
 				break;
 			default:
 		}
@@ -366,6 +374,16 @@ class MinioSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 		new Setting(containerEl)
+			.setName('Folder')
+			.setDesc(t('Optional'))
+			.addText(text => text
+				.setPlaceholder(t('Enter your folder'))
+				.setValue(this.plugin.settings.folder)
+				.onChange(async (value) => {
+					this.plugin.settings.folder = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
 			.setName('Endpoint')
 			.setDesc(t('Required'))
 			.addText(text => text
@@ -413,6 +431,8 @@ class MinioSettingTab extends PluginSettingTab {
 			.addDropdown((select) => select
 				.addOption('root', t('Root directory'))
 				.addOption('type', t('File type directory'))
+				.addOption('year', t('Year directory'))
+				.addOption('yearmonth', t('Year month directory'))
 				.addOption('date', t('Date directory'))
 				.addOption('typeAndData', t('File type and date directory'))
 				.setValue(this.plugin.settings.pathRule)
